@@ -11,6 +11,7 @@ import "./SafeMath.sol";
 import "./Ownable.sol";
 import "./IBEP20.sol";
 import "./SafeBEP20.sol";
+import "./VWToken.sol";
 
 contract SmartChef is Ownable {
     using SafeMath for uint256;
@@ -32,7 +33,7 @@ contract SmartChef is Ownable {
     }
 
     // The VW TOKEN!
-    IBEP20 public vw;
+    VwToken public vw;
     IBEP20 public rewardToken;
 
     // VW tokens created per block.
@@ -61,7 +62,7 @@ contract SmartChef is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 amount);
 
     constructor(
-        IBEP20 _vw,
+        VwToken _vw,
         IBEP20 _rewardToken,
         uint256 _rewardPerBlock,
         address _burnAddress, // V1
@@ -171,10 +172,12 @@ contract SmartChef is Ownable {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
             if(pool.depositFeeBP > 0){
                 uint256 depositFee = _amount.mul(pool.depositFeeBP).div(10000);
+                uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
                 pool.lpToken.safeTransfer(burnAddress, depositFee);
-                user.amount = user.amount.add(_amount).sub(depositFee);
+                user.amount = user.amount.add(_amount).sub(depositFee).sub(transferTax);
             }else{
-                user.amount = user.amount.add(_amount);
+                uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
+                user.amount = user.amount.add(_amount).sub(transferTax);
             }
         }        
         
@@ -237,5 +240,4 @@ contract SmartChef is Ownable {
         poolInfo[_pid].depositFeeBP = _depositFeeBP;
         depositFeeToBurn = _depositFeeBP;
     }    
-
 }
