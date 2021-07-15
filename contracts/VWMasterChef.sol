@@ -53,8 +53,6 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // The VW TOKEN!
     VwToken public vw;
-    // Dev address.
-    address public devaddr;
     // Deposit Fee address
     address public feeAddress;
     // VW tokens created per block.
@@ -91,13 +89,11 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     constructor(
         VwToken _vw,
-        address _devaddr,
         address _feeAddress,
         uint256 _vwPerBlock,
         uint256 _startBlock
     ) public {
         vw = _vw;
-        devaddr = _devaddr;
         feeAddress = _feeAddress;
         vwPerBlock = _vwPerBlock;
         startBlock = _startBlock;
@@ -187,7 +183,6 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 vwReward = multiplier.mul(vwPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        vw.mint(devaddr, vwReward.div(10));
         vw.mint(address(this), vwReward);
         pool.accVwPerShare = pool.accVwPerShare.add(vwReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
@@ -285,13 +280,6 @@ contract MasterChef is Ownable, ReentrancyGuard {
         } else {
             vw.transfer(_to, _amount);
         }
-    }
-
-    // Update dev address by the previous dev.
-    function dev(address _devaddr) public {
-        require(msg.sender == devaddr, "dev: FORBIDDEN");
-        require(_devaddr != address(0), "dev: ZERO");
-        devaddr = _devaddr;
     }
 
     function setFeeAddress(address _feeAddress) public{

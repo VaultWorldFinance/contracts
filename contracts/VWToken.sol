@@ -7,10 +7,10 @@ import "./IUniswapV2Factory.sol";
 
 // VwToken with Governance.
 contract VwToken is BEP20 {
-    // Transfer tax rate in basis points. (default 5%)
-    uint16 public transferTaxRate = 500;
-    // Burn rate % of transfer tax. (default 20% x 5% = 1% of total amount).
-    uint16 public burnRate = 20;
+    // Transfer tax rate in basis points. (default 2%)
+    uint16 public transferTaxRate = 200;
+    // Burn rate % of transfer tax. (default 100% x 2% = 2% of total amount).
+    uint16 public burnRate = 100;
     // Max transfer tax rate: 10%.
     uint16 public constant MAXIMUM_TRANSFER_TAX_RATE = 1000;
     // Burn address
@@ -110,13 +110,13 @@ contract VwToken is BEP20 {
         if (recipient == BURN_ADDRESS || transferTaxRate == 0) {
             super._transfer(sender, recipient, amount);
         } else {
-            // default tax is 5% of every transfer
+            // default tax is 2% of every transfer
             uint256 taxAmount = amount.mul(transferTaxRate).div(10000);
             uint256 burnAmount = taxAmount.mul(burnRate).div(100);
             uint256 liquidityAmount = taxAmount.sub(burnAmount);
             require(taxAmount == burnAmount + liquidityAmount, "VW::transfer: Burn value invalid");
 
-            // default 95% of transfer sent to recipient
+            // default 98% of transfer sent to recipient
             uint256 sendAmount = amount.sub(taxAmount);
             require(amount == sendAmount + taxAmount, "VW::transfer: Tax value invalid");
 

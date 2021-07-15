@@ -87,6 +87,7 @@ contract Lottery is OwnableUpgradeable {
     }
 
     uint8[4] private nullTicket = [0,0,0,0];
+    uint256 private enterBlockNumber = 0;
 
     modifier onlyAdmin() {
         require(msg.sender == adminAddress, "admin: wut?");
@@ -115,8 +116,9 @@ contract Lottery is OwnableUpgradeable {
         emit Reset(issueIndex);
     }
 
-    function enterDrawingPhase() external onlyAdmin {
+    function enterDrawingPhase() external onlyAdmin {        
         require(!drawed(), 'drawed');
+        enterBlockNumber = block.number;
         drawingPhase = true;
     }
 
@@ -124,6 +126,7 @@ contract Lottery is OwnableUpgradeable {
     function drawing(uint256 _externalRandomNumber) external onlyAdmin {
         require(!drawed(), "reset?");
         require(drawingPhase, "enter drawing phase first");
+        require(block.number > enterBlockNumber+10, "you can't drawing now." );
         bytes32 _structHash;
         uint256 _randomNumber;
         uint8 _maxNumber = maxNumber;
