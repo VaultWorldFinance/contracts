@@ -35,7 +35,6 @@ contract SmartChef is Ownable {
     // The VW TOKEN!
     VwToken public vw;
     IBEP20 public rewardToken;
-    uint256 public rewardTokenDecimals;
 
     // VW tokens created per block.
     uint256 public rewardPerBlock;
@@ -57,8 +56,6 @@ contract SmartChef is Ownable {
     uint256 public startBlock;
     // The block number when VW mining ends.
     uint256 public bonusEndBlock;
-    // Deposited amount VW in SmartChef
-    uint256 public depositedVw;
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
@@ -67,7 +64,6 @@ contract SmartChef is Ownable {
     constructor(
         VwToken _vw,
         IBEP20 _rewardToken,
-        uint256 _rewardTokenDecimals,
         uint256 _rewardPerBlock,
         address _burnAddress, // V1
         uint16 _depositFeeBP, // V1
@@ -76,7 +72,6 @@ contract SmartChef is Ownable {
     ) public {
         vw = _vw;
         rewardToken = _rewardToken;
-        rewardTokenDecimals = _rewardTokenDecimals;
         rewardPerBlock = _rewardPerBlock;
         burnAddress = _burnAddress; // V1
         depositFeeToBurn = _depositFeeBP; // V1
@@ -120,8 +115,7 @@ contract SmartChef is Ownable {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[_user];
         uint256 accVwPerShare = pool.accVwPerShare;
-        // uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-	uint256 lpSupply = depositedVw;
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
             uint256 vwReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
@@ -136,8 +130,7 @@ contract SmartChef is Ownable {
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
-        // uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        uint256 lpSupply = depositedVw;
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (lpSupply == 0) {
             pool.lastRewardBlock = block.number;
             return;
@@ -165,9 +158,8 @@ contract SmartChef is Ownable {
         updatePool(0);
         if (user.amount > 0) {
             uint256 pending = user.amount.mul(pool.accVwPerShare).div(1e12).sub(user.rewardDebt);
-            uint256 pendingReward = pending.mul(10**rewardTokenDecimals).div(1e18);
             if(pending > 0) {
-                rewardToken.safeTransfer(address(msg.sender), pendingReward);
+                rewardToken.safeTransfer(address(msg.sender), pending);
             }
         }
         // V0
@@ -183,11 +175,9 @@ contract SmartChef is Ownable {
                 uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
                 pool.lpToken.safeTransfer(burnAddress, depositFee);
                 user.amount = user.amount.add(_amount).sub(depositFee).sub(transferTax);
-                depositedVw = depositedVw.add(_amount).sub(depositFee).sub(transferTax);
             }else{
                 uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
                 user.amount = user.amount.add(_amount).sub(transferTax);
-                depositedVw = depositedVw.add(_amount).sub(transferTax);
             }
         }        
         
@@ -204,14 +194,12 @@ contract SmartChef is Ownable {
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(0);
         uint256 pending = user.amount.mul(pool.accVwPerShare).div(1e12).sub(user.rewardDebt);
-        uint256 pendingReward = pending.mul(10**rewardTokenDecimals).div(1e18);
         if(pending > 0) {
-            rewardToken.safeTransfer(address(msg.sender), pendingReward);
+            rewardToken.safeTransfer(address(msg.sender), pending);
         }
         if(_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
-            depositedVw = depositedVw.sub(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
 
