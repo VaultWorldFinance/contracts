@@ -4,10 +4,10 @@ pragma solidity 0.6.12;
 
 import "./IBEP20.sol";
 import "./SafeBEP20.sol";
-import "./IVwReferral.sol";
+import "./IVaultwReferral.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract VWReferral is IVwReferral, Ownable {
+contract VAULTWReferral is IVaultwReferral, Ownable {
     using SafeBEP20 for IBEP20;
 
     mapping(address => bool) public operators;

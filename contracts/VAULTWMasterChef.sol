@@ -6,15 +6,15 @@ import "./SafeMath.sol";
 import "./IBEP20.sol";
 import "./SafeBEP20.sol";
 import "./Ownable.sol";
-import "./IVwReferral.sol";
+import "./IVaultwReferral.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "./VWToken.sol";
+import "./VAULTWToken.sol";
 
-// MasterChef is the master of Vw. He can make Vw and he is a fair guy.
+// MasterChef is the master of Vaultw. He can make Vaultw and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once VW is sufficiently
+// will be transferred to a governance smart contract once VAULTW is sufficiently
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
@@ -29,13 +29,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
         uint256 rewardLockedUp;  // Reward locked up.
         uint256 nextHarvestUntil; // When can the user harvest again.
         //
-        // We do some fancy math here. Basically, any point in time, the amount of VWs
+        // We do some fancy math here. Basically, any point in time, the amount of VAULTWs
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accVwPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accVaultwPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accVwPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accVaultwPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -44,20 +44,20 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // Info of each pool.
     struct PoolInfo {
         IBEP20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. VWs to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that VWs distribution occurs.
-        uint256 accVwPerShare;   // Accumulated VWs per share, times 1e12. See below.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. VAULTWs to distribute per block.
+        uint256 lastRewardBlock;  // Last block number that VAULTWs distribution occurs.
+        uint256 accVaultwPerShare;   // Accumulated VAULTWs per share, times 1e12. See below.
         uint16 depositFeeBP;      // Deposit fee in basis points
         uint256 harvestInterval;  // Harvest interval in seconds
     }
 
-    // The VW TOKEN!
-    VwToken public vw;
+    // The VAULTW TOKEN!
+    VaultwToken public vaultw;
     // Deposit Fee address
     address public feeAddress;
-    // VW tokens created per block.
-    uint256 public vwPerBlock;
-    // Bonus muliplier for early vw makers.
+    // VAULTW tokens created per block.
+    uint256 public vaultwPerBlock;
+    // Bonus muliplier for early vaultw makers.
     uint256 public constant BONUS_MULTIPLIER = 1;
     // Max harvest interval: 14 days.
     uint256 public constant MAXIMUM_HARVEST_INTERVAL = 14 days;
@@ -68,15 +68,15 @@ contract MasterChef is Ownable, ReentrancyGuard {
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when VW mining starts.
+    // The block number when VAULTW mining starts.
     uint256 public startBlock;
-    // Deposited amount VW in MasterChef
-    uint256 public depositedVw;
+    // Deposited amount VAULTW in MasterChef
+    uint256 public depositedVaultw;
     // Total locked up rewards
     uint256 public totalLockedUpRewards;
 
-    // Vw referral contract address.
-    IVwReferral public vwReferral;
+    // Vaultw referral contract address.
+    IVaultwReferral public vaultwReferral;
     // Referral commission rate in basis points.
     uint16 public referralCommissionRate = 100;
     // Max referral commission rate: 10%.
@@ -90,14 +90,14 @@ contract MasterChef is Ownable, ReentrancyGuard {
     event RewardLockedUp(address indexed user, uint256 indexed pid, uint256 amountLockedUp);
 
     constructor(
-        VwToken _vw,
+        VaultwToken _vaultw,
         address _feeAddress,
-        uint256 _vwPerBlock,
+        uint256 _vaultwPerBlock,
         uint256 _startBlock
     ) public {
-        vw = _vw;
+        vaultw = _vaultw;
         feeAddress = _feeAddress;
-        vwPerBlock = _vwPerBlock;
+        vaultwPerBlock = _vaultwPerBlock;
         startBlock = _startBlock;
     }
 
@@ -119,13 +119,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
             lpToken: _lpToken,
             allocPoint: _allocPoint,
             lastRewardBlock: lastRewardBlock,
-            accVwPerShare: 0,
+            accVaultwPerShare: 0,
             depositFeeBP: _depositFeeBP,
             harvestInterval: _harvestInterval
         }));
     }
 
-    // Update the given pool's VW allocation point and deposit fee. Can only be called by the owner.
+    // Update the given pool's VAULTW allocation point and deposit fee. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint, uint16 _depositFeeBP, uint256 _harvestInterval, bool _withUpdate) public onlyOwner {
         require(_depositFeeBP <= 10000, "set: invalid deposit fee basis points");
         require(_harvestInterval <= MAXIMUM_HARVEST_INTERVAL, "set: invalid harvest interval");
@@ -143,25 +143,25 @@ contract MasterChef is Ownable, ReentrancyGuard {
         return _to.sub(_from).mul(BONUS_MULTIPLIER);
     }
 
-    // View function to see pending VWs on frontend.
-    function pendingVw(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending VAULTWs on frontend.
+    function pendingVaultw(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accVwPerShare = pool.accVwPerShare;
+        uint256 accVaultwPerShare = pool.accVaultwPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (_pid == 0){
-            lpSupply = depositedVw;
+            lpSupply = depositedVaultw;
         }
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 vwReward = multiplier.mul(vwPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accVwPerShare = accVwPerShare.add(vwReward.mul(1e12).div(lpSupply));
+            uint256 vaultwReward = multiplier.mul(vaultwPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accVaultwPerShare = accVaultwPerShare.add(vaultwReward.mul(1e12).div(lpSupply));
         }
-        uint256 pending = user.amount.mul(accVwPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(accVaultwPerShare).div(1e12).sub(user.rewardDebt);
         return pending.add(user.rewardLockedUp);
     }
 
-    // View function to see if user can harvest VWs.
+    // View function to see if user can harvest VAULTWs.
     function canHarvest(uint256 _pid, address _user) public view returns (bool) {
         UserInfo storage user = userInfo[_pid][_user];
         return block.timestamp >= user.nextHarvestUntil;
@@ -183,34 +183,34 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));        
         if (_pid == 0){
-            lpSupply = depositedVw;
+            lpSupply = depositedVaultw;
         }
         if (lpSupply <= 0 || pool.allocPoint == 0) {
             pool.lastRewardBlock = block.number;
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 vwReward = multiplier.mul(vwPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        vw.mint(address(this), vwReward);
-        pool.accVwPerShare = pool.accVwPerShare.add(vwReward.mul(1e12).div(lpSupply));
+        uint256 vaultwReward = multiplier.mul(vaultwPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        vaultw.mint(address(this), vaultwReward);
+        pool.accVaultwPerShare = pool.accVaultwPerShare.add(vaultwReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to MasterChef for VW allocation.
+    // Deposit LP tokens to MasterChef for VAULTW allocation.
     function deposit(uint256 _pid, uint256 _amount, address _referrer) public nonReentrant {
-        require (_pid != 0, 'deposit VW by staking');
+        require (_pid != 0, 'deposit VAULTW by staking');
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        if (_amount > 0 && address(vwReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
-            vwReferral.recordReferral(msg.sender, _referrer);
+        if (_amount > 0 && address(vaultwReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
+            vaultwReferral.recordReferral(msg.sender, _referrer);
         }
-        payOrLockupPendingVw(_pid);
+        payOrLockupPendingVaultw(_pid);
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-            if (address(pool.lpToken) == address(vw)) {
-                uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
+            if (address(pool.lpToken) == address(vaultw)) {
+                uint256 transferTax = _amount.mul(vaultw.transferTaxRate()).div(10000);
                 _amount = _amount.sub(transferTax);
             }
             if (pool.depositFeeBP > 0) {
@@ -221,46 +221,46 @@ contract MasterChef is Ownable, ReentrancyGuard {
                 user.amount = user.amount.add(_amount);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accVaultwPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
     // Withdraw LP tokens from MasterChef.
     function withdraw(uint256 _pid, uint256 _amount) public nonReentrant {
-        require (_pid != 0, 'withdraw VW by unstaking');
+        require (_pid != 0, 'withdraw VAULTW by unstaking');
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        payOrLockupPendingVw(_pid);
+        payOrLockupPendingVaultw(_pid);
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accVaultwPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
-    // Deposit LP tokens to MasterChef for VW allocation.
+    // Deposit LP tokens to MasterChef for VAULTW allocation.
     function enterStaking(uint256 _amount, address _referrer) public nonReentrant {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
         updatePool(0);
-        if (_amount > 0 && address(vwReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
-            vwReferral.recordReferral(msg.sender, _referrer);
+        if (_amount > 0 && address(vaultwReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
+            vaultwReferral.recordReferral(msg.sender, _referrer);
         }
-        payOrLockupPendingVw(0);
+        payOrLockupPendingVaultw(0);
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-            if (address(pool.lpToken) == address(vw)) {
-                uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
+            if (address(pool.lpToken) == address(vaultw)) {
+                uint256 transferTax = _amount.mul(vaultw.transferTaxRate()).div(10000);
                 _amount = _amount.sub(transferTax);
             }
             user.amount = user.amount.add(_amount);
-            depositedVw = depositedVw.add(_amount);
+            depositedVaultw = depositedVaultw.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accVaultwPerShare).div(1e12);
         emit Deposit(msg.sender, 0, _amount);
     }
 
@@ -270,13 +270,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[0][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(0);
-        payOrLockupPendingVw(0);
+        payOrLockupPendingVaultw(0);
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
-            depositedVw = depositedVw.sub(_amount);
+            depositedVaultw = depositedVaultw.sub(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accVaultwPerShare).div(1e12);
         emit Withdraw(msg.sender, 0, _amount);
     }
 
@@ -292,8 +292,8 @@ contract MasterChef is Ownable, ReentrancyGuard {
         user.nextHarvestUntil = 0;
     }
 
-    // Pay or lockup pending VWs.
-    function payOrLockupPendingVw(uint256 _pid) internal {
+    // Pay or lockup pending VAULTWs.
+    function payOrLockupPendingVaultw(uint256 _pid) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
@@ -301,7 +301,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
             user.nextHarvestUntil = block.timestamp.add(pool.harvestInterval);
         }
 
-        uint256 pending = user.amount.mul(pool.accVwPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accVaultwPerShare).div(1e12).sub(user.rewardDebt);
         if (canHarvest(_pid, msg.sender)) {
             if (pending > 0 || user.rewardLockedUp > 0) {
                 uint256 totalRewards = pending.add(user.rewardLockedUp);
@@ -312,7 +312,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
                 user.nextHarvestUntil = block.timestamp.add(pool.harvestInterval);
 
                 // send rewards
-                safeVwTransfer(msg.sender, totalRewards);
+                safeVaultwTransfer(msg.sender, totalRewards);
                 payReferralCommission(msg.sender, totalRewards);
             }
         } else if (pending > 0) {
@@ -321,13 +321,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
             emit RewardLockedUp(msg.sender, _pid, pending);
         }
     }
-    // Safe vw transfer function, just in case if rounding error causes pool to not have enough VWs.
-    function safeVwTransfer(address _to, uint256 _amount) internal {
-        uint256 vwBal = vw.balanceOf(address(this));
-        if (_amount > vwBal) {
-            vw.transfer(_to, vwBal);
+    // Safe vaultw transfer function, just in case if rounding error causes pool to not have enough VAULTWs.
+    function safeVaultwTransfer(address _to, uint256 _amount) internal {
+        uint256 vaultwBal = vaultw.balanceOf(address(this));
+        if (_amount > vaultwBal) {
+            vaultw.transfer(_to, vaultwBal);
         } else {
-            vw.transfer(_to, _amount);
+            vaultw.transfer(_to, _amount);
         }
     }
 
@@ -338,15 +338,15 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     //Pancake has to add hidden dummy pools inorder to alter the emission, here we make it simple and transparent to all.
-    function updateEmissionRate(uint256 _vwPerBlock) public onlyOwner {
+    function updateEmissionRate(uint256 _vaultwPerBlock) public onlyOwner {
         massUpdatePools();
-        emit EmissionRateUpdated(msg.sender, vwPerBlock, _vwPerBlock);
-        vwPerBlock = _vwPerBlock;
+        emit EmissionRateUpdated(msg.sender, vaultwPerBlock, _vaultwPerBlock);
+        vaultwPerBlock = _vaultwPerBlock;
     }
 
-    // Update the vw referral contract address by the owner
-    function setVwReferral(IVwReferral _vwReferral) public onlyOwner {
-        vwReferral = _vwReferral;
+    // Update the vaultw referral contract address by the owner
+    function setVaultwReferral(IVaultwReferral _vaultwReferral) public onlyOwner {
+        vaultwReferral = _vaultwReferral;
     }
 
     // Update referral commission rate by the owner
@@ -369,13 +369,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // Pay referral commission to the referrer who referred this user.
     function payReferralCommission(address _user, uint256 _pending) internal {
-        if (address(vwReferral) != address(0) && referralCommissionRate > 0) {
-            address referrer = vwReferral.getReferrer(_user);
+        if (address(vaultwReferral) != address(0) && referralCommissionRate > 0) {
+            address referrer = vaultwReferral.getReferrer(_user);
             uint256 commissionAmount = _pending.mul(referralCommissionRate).div(10000);
 
             if (referrer != address(0) && commissionAmount > 0) {
-                vw.mint(referrer, commissionAmount);
-                vwReferral.recordReferralCommission(referrer, commissionAmount);
+                vaultw.mint(referrer, commissionAmount);
+                vaultwReferral.recordReferralCommission(referrer, commissionAmount);
                 emit ReferralCommissionPaid(_user, referrer, commissionAmount);
             }
         }

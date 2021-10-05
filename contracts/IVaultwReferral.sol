@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-interface IVwReferral {
+interface IVaultwReferral {
     /**
      * @dev Record referral.
      */

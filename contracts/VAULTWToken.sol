@@ -220,8 +220,8 @@ library EnumerableSet {
     }
 }
 
-// VwToken with Governance.
-contract VwToken is BEP20 {
+// VaultwToken with Governance.
+contract VaultwToken is BEP20 {
     // Transfer tax rate in basis points. (default 2%)
     uint16 public transferTaxRate = 200;
     // Burn rate % of transfer tax. (default 100% x 2% = 2% of total amount).
@@ -237,7 +237,7 @@ contract VwToken is BEP20 {
     mapping(address => bool) private _excludedFromAntiWhale;
     // Automatic swap and liquify enabled
     bool public swapAndLiquifyEnabled = false;
-    // Min amount to liquify. (default 500 VWs)
+    // Min amount to liquify. (default 500 VAULTWs)
     uint256 public minAmountToLiquify = 500 ether;
     // The swap router, modifiable. Will be changed to VaultWorld's router when our own AMM release
     IUniswapV2Router02 public vaultworldRouter;
@@ -274,7 +274,7 @@ contract VwToken is BEP20 {
                 _excludedFromAntiWhale[sender] == false
                 && _excludedFromAntiWhale[recipient] == false
             ) {
-                require(amount <= maxTransferAmount(), "VW::antiWhale: Transfer amount exceeds the maxTransferAmount");
+                require(amount <= maxTransferAmount(), "VAULTW::antiWhale: Transfer amount exceeds the maxTransferAmount");
             }
         }
         _;
@@ -294,9 +294,9 @@ contract VwToken is BEP20 {
     }
 
     /**
-     * @notice Constructs the VW Token contract.
+     * @notice Constructs the VAULTW Token contract.
      */
-    constructor() public BEP20("VAUTWORLD", "VW") {
+    constructor() public BEP20("VAULTWORLD", "VAULTW") {
         _operator = _msgSender();
         emit OperatorTransferred(address(0), _operator);
 
@@ -313,9 +313,9 @@ contract VwToken is BEP20 {
         return true;
     }
 
-    /// @dev overrides transfer function to meet tokenomics of VW
+    /// @dev overrides transfer function to meet tokenomics of VAULTW
     function _transfer(address sender, address recipient, uint256 amount) internal virtual override antiWhale(sender, recipient, amount) {
-        require(sender != address(0), "VW::sender is not valid");
+        require(sender != address(0), "VAULTW::sender is not valid");
         require(!isBlockAddr(sender), "sender can't be blockaddr");
         require(!isBlockAddr(recipient), "recipient can't be blockaddr");
 
@@ -338,11 +338,11 @@ contract VwToken is BEP20 {
             uint256 taxAmount = amount.mul(transferTaxRate).div(10000);
             uint256 burnAmount = taxAmount.mul(burnRate).div(100);
             uint256 liquidityAmount = taxAmount.sub(burnAmount);
-            require(taxAmount == burnAmount + liquidityAmount, "VW::transfer: Burn value invalid");
+            require(taxAmount == burnAmount + liquidityAmount, "VAULTW::transfer: Burn value invalid");
 
             // default 98% of transfer sent to recipient
             uint256 sendAmount = amount.sub(taxAmount);
-            require(amount == sendAmount + taxAmount, "VW::transfer: Tax value invalid");
+            require(amount == sendAmount + taxAmount, "VAULTW::transfer: Tax value invalid");
 
             super._transfer(sender, BURN_ADDRESS, burnAmount);
             super._transfer(sender, address(this), liquidityAmount);
@@ -441,7 +441,7 @@ contract VwToken is BEP20 {
      * Can only be called by the current operator.
      */
     function updateTransferTaxRate(uint16 _transferTaxRate) public onlyOperator {
-        require(_transferTaxRate <= MAXIMUM_TRANSFER_TAX_RATE, "VW::updateTransferTaxRate: Transfer tax rate must not exceed the maximum rate.");
+        require(_transferTaxRate <= MAXIMUM_TRANSFER_TAX_RATE, "VAULTW::updateTransferTaxRate: Transfer tax rate must not exceed the maximum rate.");
         emit TransferTaxRateUpdated(msg.sender, transferTaxRate, _transferTaxRate);
         transferTaxRate = _transferTaxRate;
     }
@@ -451,7 +451,7 @@ contract VwToken is BEP20 {
      * Can only be called by the current operator.
      */
     function updateBurnRate(uint16 _burnRate) public onlyOperator {
-        require(_burnRate <= 100, "VW::updateBurnRate: Burn rate must not exceed the maximum rate.");
+        require(_burnRate <= 100, "VAULTW::updateBurnRate: Burn rate must not exceed the maximum rate.");
         emit BurnRateUpdated(msg.sender, burnRate, _burnRate);
         burnRate = _burnRate;
     }
@@ -461,7 +461,7 @@ contract VwToken is BEP20 {
      * Can only be called by the current operator.
      */
     function updateMaxTransferAmountRate(uint16 _maxTransferAmountRate) public onlyOperator {
-        require(_maxTransferAmountRate <= 10000, "VW::updateMaxTransferAmountRate: Max transfer amount rate must not exceed the maximum rate.");
+        require(_maxTransferAmountRate <= 10000, "VAULTW::updateMaxTransferAmountRate: Max transfer amount rate must not exceed the maximum rate.");
         emit MaxTransferAmountRateUpdated(msg.sender, maxTransferAmountRate, _maxTransferAmountRate);
         maxTransferAmountRate = _maxTransferAmountRate;
     }
@@ -499,7 +499,7 @@ contract VwToken is BEP20 {
     function updateVaultWorldRouter(address _router) public onlyOperator {
         vaultworldRouter = IUniswapV2Router02(_router);
         vaultworldPair = IUniswapV2Factory(vaultworldRouter.factory()).getPair(address(this), vaultworldRouter.WETH());
-        require(vaultworldPair != address(0), "VW::updateVaultWorldRouter: Invalid pair address.");
+        require(vaultworldPair != address(0), "VAULTW::updateVaultWorldRouter: Invalid pair address.");
         emit VaultWorldRouterUpdated(msg.sender, address(vaultworldRouter), vaultworldPair);
     }
 
@@ -515,7 +515,7 @@ contract VwToken is BEP20 {
      * Can only be called by the current operator.
      */
     function transferOperator(address newOperator) public onlyOperator {
-        require(newOperator != address(0), "VW::transferOperator: new operator is the zero address");
+        require(newOperator != address(0), "VAULTW::transferOperator: new operator is the zero address");
         emit OperatorTransferred(_operator, newOperator);
         _operator = newOperator;
     }
@@ -622,9 +622,9 @@ contract VwToken is BEP20 {
         );
 
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "VW::delegateBySig: invalid signature");
-        require(nonce == nonces[signatory]++, "VW::delegateBySig: invalid nonce");
-        require(now <= expiry, "VW::delegateBySig: signature expired");
+        require(signatory != address(0), "VAULTW::delegateBySig: invalid signature");
+        require(nonce == nonces[signatory]++, "VAULTW::delegateBySig: invalid nonce");
+        require(now <= expiry, "VAULTW::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -654,7 +654,7 @@ contract VwToken is BEP20 {
         view
         returns (uint256)
     {
-        require(blockNumber < block.number, "VW::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "VAULTW::getPriorVotes: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -691,7 +691,7 @@ contract VwToken is BEP20 {
         internal
     {
         address currentDelegate = _delegates[delegator];
-        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying VWs (not scaled);
+        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying VAULTWs (not scaled);
         _delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -727,7 +727,7 @@ contract VwToken is BEP20 {
     )
         internal
     {
-        uint32 blockNumber = safe32(block.number, "VW::_writeCheckpoint: block number exceeds 32 bits");
+        uint32 blockNumber = safe32(block.number, "VAULTW::_writeCheckpoint: block number exceeds 32 bits");
 
         if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
             checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
@@ -751,12 +751,12 @@ contract VwToken is BEP20 {
     }
 
     function addMinter(address _addMinter) public onlyOwner returns (bool) {
-        require(_addMinter != address(0), "VW: _addMinter is the zero address");
+        require(_addMinter != address(0), "VAULTW: _addMinter is the zero address");
         return EnumerableSet.add(_minters, _addMinter);
     }
 
     function delMinter(address _delMinter) public onlyOwner returns (bool) {
-        require(_delMinter != address(0), "VW: _delMinter is the zero address");
+        require(_delMinter != address(0), "VAULTW: _delMinter is the zero address");
         return EnumerableSet.remove(_minters, _delMinter);
     }
 
@@ -769,7 +769,7 @@ contract VwToken is BEP20 {
     }
 
     function getMinter(uint256 _index) public view onlyOwner returns (address){
-        require(_index <= getMinterLength() - 1, "VW: index out of bounds");
+        require(_index <= getMinterLength() - 1, "VAULTW: index out of bounds");
         return EnumerableSet.at(_minters, _index);
     }
 
@@ -780,12 +780,12 @@ contract VwToken is BEP20 {
     }
     
     function addBlockAddr(address _addBlockAddr) public onlyOwner returns (bool) {
-        require(_addBlockAddr != address(0), "VW: _addBlockAddr is the zero address");
+        require(_addBlockAddr != address(0), "VAULTW: _addBlockAddr is the zero address");
         return EnumerableSet.add(_blockAddrs, _addBlockAddr);
     }
 
     function delBlockAddr(address _delblockAddr) public onlyOwner returns (bool) {
-        require(_delblockAddr != address(0), "VW: _delblockAddr is the zero address");
+        require(_delblockAddr != address(0), "VAULTW: _delblockAddr is the zero address");
         return EnumerableSet.remove(_blockAddrs, _delblockAddr);
     }
 
@@ -798,7 +798,7 @@ contract VwToken is BEP20 {
     }
 
     function getBlockAddr(uint256 _index) public view onlyOwner returns (address){
-        require(_index <= getBlockAddrLength() - 1, "VW: index out of bounds");
+        require(_index <= getBlockAddrLength() - 1, "VAULTW: index out of bounds");
         return EnumerableSet.at(_blockAddrs, _index);
     }
 

@@ -1532,16 +1532,16 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
     using SafeBEP20 for IBEP20;
     using SafeMath for uint256;
 
-    IBEP20 public vwToken;
+    IBEP20 public vvaultwToken;
 
     bytes32 public constant NFT_ROLE = keccak256("NFT_ROLE");
     bytes32 public constant POINT_ROLE = keccak256("POINT_ROLE");
     bytes32 public constant SPECIAL_ROLE = keccak256("SPECIAL_ROLE");
 
     uint256 public numberActiveProfiles;
-    uint256 public numberVwToReactivate;
-    uint256 public numberVwToRegister;
-    uint256 public numberVwToUpdate;
+    uint256 public numberVaultwToReactivate;
+    uint256 public numberVaultwToRegister;
+    uint256 public numberVaultwToUpdate;
     uint256 public numberTeams;
 
     mapping(address => bool) public hasRegistered;
@@ -1650,21 +1650,21 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
     }
 
     constructor(
-        IBEP20 _vwToken,
-        uint256 _numberVwToReactivate,
-        uint256 _numberVwToRegister,
-        uint256 _numberVwToUpdate
+        IBEP20 _vvaultwToken,
+        uint256 _numberVaultwToReactivate,
+        uint256 _numberVaultwToRegister,
+        uint256 _numberVaultwToUpdate
     ) public {
-        vwToken = _vwToken;
-        numberVwToReactivate = _numberVwToReactivate;
-        numberVwToRegister = _numberVwToRegister;
-        numberVwToUpdate = _numberVwToUpdate;
+        vvaultwToken = _vvaultwToken;
+        numberVaultwToReactivate = _numberVaultwToReactivate;
+        numberVaultwToRegister = _numberVaultwToRegister;
+        numberVaultwToUpdate = _numberVaultwToUpdate;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /**
      * @dev To create a user profile. It sends the NFT to the contract
-     * and sends VW to burn address. Requires 2 token approvals.
+     * and sends VAULTW to burn address. Requires 2 token approvals.
      */
     function createProfile(
         uint256 _teamId,
@@ -1687,11 +1687,11 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
         // Transfer NFT to this contract
         nftToken.safeTransferFrom(_msgSender(), address(this), _tokenId);
 
-        // Transfer VW tokens to this contract
-        vwToken.safeTransferFrom(
+        // Transfer VAULTW tokens to this contract
+        vvaultwToken.safeTransferFrom(
             _msgSender(),
             address(this),
-            numberVwToRegister
+            numberVaultwToRegister
         );
 
         // Increment the _countUsers counter and get userId
@@ -1784,11 +1784,11 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
         // Transfer token to new address
         nftNewToken.safeTransferFrom(_msgSender(), address(this), _tokenId);
 
-        // Transfer VW token to this address
-        vwToken.safeTransferFrom(
+        // Transfer VAULTW token to this address
+        vvaultwToken.safeTransferFrom(
             _msgSender(),
             address(this),
-            numberVwToUpdate
+            numberVaultwToUpdate
         );
 
         // Interface to deposit the NFT contract
@@ -1825,10 +1825,10 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
         );
 
         // Transfer to this address
-        vwToken.safeTransferFrom(
+        vvaultwToken.safeTransferFrom(
             _msgSender(),
             address(this),
-            numberVwToReactivate
+            numberVaultwToReactivate
         );
 
         // Transfer NFT to contract
@@ -2028,11 +2028,11 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
     }
 
     /**
-     * @dev Claim VW to burn later.
+     * @dev Claim VAULTW to burn later.
      * Callable only by owner admins.
      */
     function claimFee(uint256 _amount) external onlyOwner {
-        vwToken.safeTransfer(_msgSender(), _amount);
+        vvaultwToken.safeTransfer(_msgSender(), _amount);
     }
 
     /**
@@ -2074,17 +2074,17 @@ contract VaultWorldProfile is AccessControl, ERC721Holder {
     }
 
     /**
-     * @dev Update the number of VW to register
+     * @dev Update the number of VAULTW to register
      * Callable only by owner admins.
      */
-    function updateNumberVw(
-        uint256 newNumberVwToReactivate,
-        uint256 _newNumberVwToRegister,
-        uint256 _newNumberVwToUpdate
+    function updateNumberVaultw(
+        uint256 newNumberVaultwToReactivate,
+        uint256 _newNumberVaultwToRegister,
+        uint256 _newNumberVaultwToUpdate
     ) external onlyOwner {
-        numberVwToReactivate = newNumberVwToReactivate;
-        numberVwToRegister = _newNumberVwToRegister;
-        numberVwToUpdate = _newNumberVwToUpdate;
+        numberVaultwToReactivate = newNumberVaultwToReactivate;
+        numberVaultwToRegister = _newNumberVaultwToRegister;
+        numberVaultwToUpdate = _newNumberVaultwToUpdate;
     }
 
     /**

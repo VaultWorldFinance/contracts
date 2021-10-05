@@ -17,7 +17,7 @@ contract('Lottery', (accounts) => {
         dev=accounts[4];
         minter=accounts[0];
 
-        this.vw = await MockBEP20.deployed();
+        this.vaultw = await MockBEP20.deployed();
         this.nft = await LotteryNFT.deployed();
         this.lottery = await Lottery.deployed();
 
@@ -29,9 +29,9 @@ contract('Lottery', (accounts) => {
         this.lotteryProxy = new web3.eth.Contract(lotteryABI, this.lotteryProxyAddress);
 
         await this.nft.transferOwnership(this.lotteryProxyAddress, {from: minter});
-        await this.vw.transfer(bob, '2000', { from: minter });
-        await this.vw.transfer(alice, '2000', { from: minter });
-        await this.vw.transfer(carol, '2000', { from: minter });
+        await this.vaultw.transfer(bob, '2000', { from: minter });
+        await this.vaultw.transfer(alice, '2000', { from: minter });
+        await this.vaultw.transfer(carol, '2000', { from: minter });
     });
 
     it('test', async () => {
@@ -40,8 +40,8 @@ contract('Lottery', (accounts) => {
         bob=accounts[2];
         carol=accounts[3];
         dev=accounts[4];
-        await this.vw.approve(this.lotteryProxyAddress, '1000', { from: alice });
-        await this.vw.approve(this.lotteryProxyAddress, '1000', { from: bob });
+        await this.vaultw.approve(this.lotteryProxyAddress, '1000', { from: alice });
+        await this.vaultw.approve(this.lotteryProxyAddress, '1000', { from: bob });
 
         await this.lotteryProxy.methods.buy('50', [1,3,4,3]).send({from: alice, gas: 4700000});
         await this.lotteryProxy.methods.buy('100', [1,2,3,4]).send({from: alice, gas: 4700000 });
@@ -51,7 +51,7 @@ contract('Lottery', (accounts) => {
         await this.lotteryProxy.methods.buy('50', [1,3,4,3]).send({from: bob, gas: 4700000 });
         await this.lotteryProxy.methods.multiBuy('1', [[1,3,4,3],[1,3,4,3],[1,2,2,3],[1,3,4,3],[1,3,4,3],[1,2,2,3],[1,3,4,3],[1,3,4,3],[1,2,2,3],[1,3,4,3],[1,3,4,3],[1,2,2,3],[1,3,4,3],[1,3,4,3],[1,2,2,3],[1,3,4,3],[1,3,4,3],[1,2,2,3]]).send({from: bob, gas: 8000000 });
 
-        assert.equal((await this.vw.balanceOf(this.lotteryProxyAddress)).toString(), '418');
+        assert.equal((await this.vaultw.balanceOf(this.lotteryProxyAddress)).toString(), '418');
         assert.equal((await this.lotteryProxy.methods.totalAddresses().call()).toString(), '2');
         assert.equal((await this.nft.tokenOfOwnerByIndex(bob, 1)).toString(), '5');
         assert.equal((await this.nft.tokenOfOwnerByIndex(alice, 0)).toString(), '1');

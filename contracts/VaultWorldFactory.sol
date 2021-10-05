@@ -113,7 +113,7 @@ contract PancakeERC20 is IPancakeERC20 {
     using SafeMath for uint;
 
     string public constant name = 'VaultWorld LPs';
-    string public constant symbol = 'Vw-LP';
+    string public constant symbol = 'Vaultw-LP';
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;

@@ -1,14 +1,14 @@
 # contracts
 
-VW Token : 
+VAULTW Token : 
 
-Address : 0x3413C63B8438728CcC03F67Ca5C6988B5637454c
+Address : 0x8274921E9D4a53B9aEf220A7E69251c2dd996416
 
-BSC contract code : https://bscscan.com/address/0x3413C63B8438728CcC03F67Ca5C6988B5637454c#code
+Fantom contract code : https://ftmscan.com/address/0x3413C63B8438728CcC03F67Ca5C6988B5637454c#code
 
-VW Masterchef : 
+VAULTW Masterchef : 
 
-Address : 0x866210666FB0B9F4110BE5d1C076A62BBe08a994
+Address : 0x5D63381a85E886523aa79129a30c6c3b86641F39
 
-BSC contract code : https://bscscan.com/address/0x866210666FB0B9F4110BE5d1C076A62BBe08a994#code
+Fantom contract code : https://ftmscan.com/address/0x5D63381a85E886523aa79129a30c6c3b86641F39#code
 

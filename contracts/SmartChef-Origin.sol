@@ -11,7 +11,7 @@ import "./SafeMath.sol";
 import "./Ownable.sol";
 import "./IBEP20.sol";
 import "./SafeBEP20.sol";
-import "./VWToken.sol";
+import "./VAULTWToken.sol";
 
 contract SmartChef is Ownable {
     using SafeMath for uint256;
@@ -26,17 +26,17 @@ contract SmartChef is Ownable {
     // Info of each pool.
     struct PoolInfo {
         IBEP20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. VWs to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that VWs distribution occurs.
-        uint256 accVwPerShare; // Accumulated VWs per share, times 1e12. See below.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. VAULTWs to distribute per block.
+        uint256 lastRewardBlock;  // Last block number that VAULTWs distribution occurs.
+        uint256 accVaultwPerShare; // Accumulated VAULTWs per share, times 1e12. See below.
         uint16 depositFeeBP;      // V1 Deposit fee in basis points
     }
 
-    // The VW TOKEN!
-    VwToken public vw;
+    // The VAULTW TOKEN!
+    VaultwToken public vaultw;
     IBEP20 public rewardToken;
 
-    // VW tokens created per block.
+    // VAULTW tokens created per block.
     uint256 public rewardPerBlock;
     
     // V1
@@ -52,9 +52,9 @@ contract SmartChef is Ownable {
     mapping (address => UserInfo) public userInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 private totalAllocPoint = 0;
-    // The block number when VW mining starts.
+    // The block number when VAULTW mining starts.
     uint256 public startBlock;
-    // The block number when VW mining ends.
+    // The block number when VAULTW mining ends.
     uint256 public bonusEndBlock;
 
     event Deposit(address indexed user, uint256 amount);
@@ -62,7 +62,7 @@ contract SmartChef is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 amount);
 
     constructor(
-        VwToken _vw,
+        VaultwToken _vaultw,
         IBEP20 _rewardToken,
         uint256 _rewardPerBlock,
         address _burnAddress, // V1
@@ -70,7 +70,7 @@ contract SmartChef is Ownable {
         uint256 _startBlock,
         uint256 _bonusEndBlock
     ) public {
-        vw = _vw;
+        vaultw = _vaultw;
         rewardToken = _rewardToken;
         rewardPerBlock = _rewardPerBlock;
         burnAddress = _burnAddress; // V1
@@ -83,10 +83,10 @@ contract SmartChef is Ownable {
 
         // staking pool
         poolInfo.push(PoolInfo({
-            lpToken: _vw,
+            lpToken: _vaultw,
             allocPoint: 1000,
             lastRewardBlock: startBlock,
-            accVwPerShare: 0,
+            accVaultwPerShare: 0,
             depositFeeBP: depositFeeToBurn // V1
         }));
 
@@ -114,14 +114,14 @@ contract SmartChef is Ownable {
     function pendingReward(address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[_user];
-        uint256 accVwPerShare = pool.accVwPerShare;
+        uint256 accVaultwPerShare = pool.accVaultwPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 vwReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accVwPerShare = accVwPerShare.add(vwReward.mul(1e12).div(lpSupply));
+            uint256 vaultwReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accVaultwPerShare = accVaultwPerShare.add(vaultwReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accVwPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accVaultwPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward variables of the given pool to be up-to-date.
@@ -136,8 +136,8 @@ contract SmartChef is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 vwReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        pool.accVwPerShare = pool.accVwPerShare.add(vwReward.mul(1e12).div(lpSupply));
+        uint256 vaultwReward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        pool.accVaultwPerShare = pool.accVaultwPerShare.add(vaultwReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
@@ -150,14 +150,14 @@ contract SmartChef is Ownable {
     }
 
 
-    // Stake VW tokens to TheBushV1
+    // Stake VAULTW tokens to TheBushV1
     function deposit(uint256 _amount) public {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[msg.sender];
 
         updatePool(0);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accVwPerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accVaultwPerShare).div(1e12).sub(user.rewardDebt);
             if(pending > 0) {
                 rewardToken.safeTransfer(address(msg.sender), pending);
             }
@@ -172,28 +172,28 @@ contract SmartChef is Ownable {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
             if(pool.depositFeeBP > 0){
                 uint256 depositFee = _amount.mul(pool.depositFeeBP).div(10000);
-                uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
+                uint256 transferTax = _amount.mul(vaultw.transferTaxRate()).div(10000);
                 pool.lpToken.safeTransfer(burnAddress, depositFee);
                 user.amount = user.amount.add(_amount).sub(depositFee).sub(transferTax);
             }else{
-                uint256 transferTax = _amount.mul(vw.transferTaxRate()).div(10000);
+                uint256 transferTax = _amount.mul(vaultw.transferTaxRate()).div(10000);
                 user.amount = user.amount.add(_amount).sub(transferTax);
             }
         }        
         
         
-        user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accVaultwPerShare).div(1e12);
 
         emit Deposit(msg.sender, _amount);
     }
 
-    // Withdraw VW tokens from STAKING.
+    // Withdraw VAULTW tokens from STAKING.
     function withdraw(uint256 _amount) public {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(0);
-        uint256 pending = user.amount.mul(pool.accVwPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accVaultwPerShare).div(1e12).sub(user.rewardDebt);
         if(pending > 0) {
             rewardToken.safeTransfer(address(msg.sender), pending);
         }
@@ -201,7 +201,7 @@ contract SmartChef is Ownable {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accVwPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accVaultwPerShare).div(1e12);
 
         emit Withdraw(msg.sender, _amount);
     }
